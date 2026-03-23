@@ -129,7 +129,7 @@ export default function HomeScreen({ navigation }) {
 
                 {/* Features Section */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>WHY ECOSHARE</Text>
+                    <Text style={styles.sectionLabel}>WHY VOYAGO</Text>
                     <Text style={styles.sectionTitle}>Everything you need for{'\n'}eco-friendly travels</Text>
 
                     {FEATURES.map((feature, i) => (
@@ -194,7 +194,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.footer}>
                     <View style={styles.footerLogo}>
                         <Text style={{ fontSize: 24 }}>🌿</Text>
-                        <Text style={styles.footerLogoText}>EcoShare</Text>
+                        <Text style={styles.footerLogoText}>Voyago</Text>
                     </View>
                     <Text style={styles.footerDesc}>
                         Making global travel sustainable and collaborative for everyone.
@@ -208,7 +208,7 @@ export default function HomeScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.footerCopyright}>
-                        © 2025 EcoShare. All rights reserved.
+                        © 2025 Voyago. All rights reserved.
                     </Text>
                 </View>
             </ScrollView>
