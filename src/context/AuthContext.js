@@ -1,74 +1,57 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-expo';
 
 const AuthContext = createContext();
-
 const API_URL = 'https://eco-share-tbyu.vercel.app/api';
 
 export const AuthProvider = ({ children }) => {
+    const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
+    const { signOut } = useClerkAuth();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadStoredUser();
-    }, []);
+        if (clerkLoaded) {
+            if (clerkUser) {
+                // Sync with your backend
+                syncUserWithBackend(clerkUser);
+            } else {
+                setUser(null);
+                setLoading(false);
+            }
+        }
+    }, [clerkUser, clerkLoaded]);
 
-    const loadStoredUser = async () => {
+    const syncUserWithBackend = async (cUser) => {
         try {
-            const stored = await AsyncStorage.getItem('ecoshare_user');
-            if (stored) {
-                setUser(JSON.parse(stored));
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: cUser.fullName || cUser.username || cUser.primaryEmailAddress.emailAddress.split('@')[0],
+                    email: cUser.primaryEmailAddress.emailAddress,
+                    photoUrl: cUser.imageUrl,
+                }),
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                setUser(data);
             }
         } catch (e) {
-            console.error('Failed to load user:', e);
+            console.error('Error syncing with backend:', e);
         } finally {
             setLoading(false);
         }
     };
 
-    const login = async (email, password) => {
-        try {
-            const res = await fetch(`${API_URL}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setUser(data);
-                await AsyncStorage.setItem('ecoshare_user', JSON.stringify(data));
-                return { success: true };
-            }
-            return { success: false, error: data.error || 'Login failed' };
-        } catch (e) {
-            console.error(e);
-            return { success: false, error: 'Network error. Please try again.' };
-        }
-    };
-
-    const signup = async (name, email, password) => {
-        try {
-            const res = await fetch(`${API_URL}/auth/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setUser(data);
-                await AsyncStorage.setItem('ecoshare_user', JSON.stringify(data));
-                return { success: true };
-            }
-            return { success: false, error: data.error || 'Signup failed' };
-        } catch (e) {
-            console.error(e);
-            return { success: false, error: 'Network error. Please try again.' };
-        }
-    };
-
     const logout = async () => {
-        setUser(null);
-        await AsyncStorage.removeItem('ecoshare_user');
+        try {
+            await signOut();
+            setUser(null);
+        } catch (e) {
+            console.error('Logout failed:', e);
+        }
     };
 
     const refreshUser = async () => {
@@ -78,7 +61,6 @@ export const AuthProvider = ({ children }) => {
             if (res.ok) {
                 const updatedUser = await res.json();
                 setUser(updatedUser);
-                await AsyncStorage.setItem('ecoshare_user', JSON.stringify(updatedUser));
             }
         } catch (e) {
             console.error('Failed to refresh user:', e);
@@ -86,7 +68,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout, refreshUser, loading, API_URL }}>
+        <AuthContext.Provider value={{
+            user,
+            logout,
+            refreshUser,
+            loading: !clerkLoaded || loading,
+            API_URL,
+            clerkUser
+        }}>
             {children}
         </AuthContext.Provider>
     );

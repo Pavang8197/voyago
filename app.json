@@ -3,6 +3,7 @@
     "name": "Voyago",
     "slug": "voyago",
     "version": "1.0.0",
+    "scheme": "voyago",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

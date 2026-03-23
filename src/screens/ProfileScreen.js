@@ -8,8 +8,12 @@ import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProfileScreen({ navigation }) {
-    const { user, logout, refreshUser } = useAuth();
+    const { user, clerkUser, logout, refreshUser } = useAuth();
     const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    const profileName = user?.name || clerkUser?.fullName || clerkUser?.firstName || 'Traveler';
+    const profileEmail = user?.email || clerkUser?.primaryEmailAddress?.emailAddress || '';
+    const profilePhoto = user?.photoUrl || clerkUser?.imageUrl;
 
     useEffect(() => {
         refreshUser();
@@ -46,22 +50,22 @@ export default function ProfileScreen({ navigation }) {
 
                     <Animated.View style={[styles.profileCard, { opacity: fadeAnim }]}>
                         <View style={styles.avatarSection}>
-                            {user?.photoUrl ? (
-                                <Image source={{ uri: user.photoUrl }} style={styles.avatar} />
+                            {profilePhoto ? (
+                                <Image source={{ uri: profilePhoto }} style={styles.avatar} />
                             ) : (
                                 <LinearGradient
                                     colors={['#10B981', '#059669']}
                                     style={styles.avatarPlaceholder}
                                 >
                                     <Text style={styles.avatarText}>
-                                        {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                                        {profileName?.charAt(0)?.toUpperCase() || '?'}
                                     </Text>
                                 </LinearGradient>
                             )}
                             <View style={styles.onlineDot} />
                         </View>
-                        <Text style={styles.userName}>{user?.name || 'Traveler'}</Text>
-                        <Text style={styles.userEmail}>{user?.email || ''}</Text>
+                        <Text style={styles.userName}>{profileName}</Text>
+                        <Text style={styles.userEmail}>{profileEmail}</Text>
 
                         {/* Eco Points Badge */}
                         <View style={styles.pointsBadge}>
