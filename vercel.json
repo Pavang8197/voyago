@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    }
+  ],
+  "env": {
+    "MONGODB_URI": "REPLACE_WITH_YOUR_MONGODB_URI"
+  }
+}
