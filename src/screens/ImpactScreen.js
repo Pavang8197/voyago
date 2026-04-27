@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, Animated, Dimensions
+    View, Text, StyleSheet, ScrollView, Animated, Dimensions, ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +24,13 @@ export default function ImpactScreen() {
     }, []);
 
     const fetchActivities = async () => {
+        const userId = user?._id || user?.id;
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
         try {
-            const res = await fetch(`${API_URL}/expenses?payerId=${user?.id}`);
+            const res = await fetch(`${API_URL}/expenses?payerId=${userId}`);
             if (res.ok) {
                 const data = await res.json();
                 const ecoActivities = data
@@ -75,6 +80,11 @@ export default function ImpactScreen() {
                 </LinearGradient>
 
                 {/* Stats Grid */}
+                {loading ? (
+                    <View style={{ paddingTop: 60, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                ) : (
                 <Animated.View style={[styles.statsGrid, { opacity: fadeAnim }]}>
                     {stats.map((stat, i) => (
                         <View key={i} style={styles.statCard}>
@@ -91,6 +101,7 @@ export default function ImpactScreen() {
                         </View>
                     ))}
                 </Animated.View>
+                )}
 
                 {/* Monthly Impact Chart */}
                 <View style={styles.section}>

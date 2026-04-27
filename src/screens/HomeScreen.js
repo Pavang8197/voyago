@@ -43,7 +43,8 @@ export default function HomeScreen({ navigation }) {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
-    const cardAnims = FEATURES.map(() => useRef(new Animated.Value(0)).current);
+    const cardAnimsRef = useRef(FEATURES.map(() => new Animated.Value(0)));
+    const cardAnims = cardAnimsRef.current;
 
     useEffect(() => {
         Animated.parallel([
@@ -208,7 +209,7 @@ export default function HomeScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.footerCopyright}>
-                        © 2025 Voyago. All rights reserved.
+                        © 2026 Voyago. All rights reserved.
                     </Text>
                 </View>
             </ScrollView>

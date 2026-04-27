@@ -69,7 +69,7 @@ export default function TripDetailScreen({ route, navigation }) {
                     tripId,
                     description: expenseDesc,
                     amount: parseFloat(expenseAmount),
-                    payerId: user.id,
+                    payerId: user._id || user.id,
                     splitWith: trip.members,
                     isEcoFriendly,
                 }),
@@ -89,15 +89,22 @@ export default function TripDetailScreen({ route, navigation }) {
     const shareTrip = async () => {
         try {
             await Share.share({
-                message: `Join my trip "${trip.name}" on EcoShare! Use code: ${trip.shareCode}`,
+                message: `Join my trip "${trip.name}" on Voyago! Use code: ${trip.shareCode}`,
             });
         } catch (e) {
             console.error(e);
         }
     };
 
+    const userId = user?._id || user?.id;
+    if (!userId) return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+    );
+
     const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-    const myExpenses = expenses.filter(e => e.payerId === user?.id);
+    const myExpenses = expenses.filter(e => String(e.payerId) === String(userId));
     const myPaid = myExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     const myShare = totalExpenses / (members.length || 1);
     const balance = myPaid - myShare;
@@ -164,7 +171,7 @@ export default function TripDetailScreen({ route, navigation }) {
                                         </Text>
                                     </LinearGradient>
                                     <Text style={styles.memberName} numberOfLines={1}>
-                                        {m.id === user.id ? 'You' : m.name}
+                                        {String(m._id || m.id) === String(userId) ? 'You' : m.name}
                                     </Text>
                                 </View>
                             ))}
@@ -193,9 +200,9 @@ export default function TripDetailScreen({ route, navigation }) {
                         </View>
                     ) : (
                         expenses.map((exp, i) => {
-                            const payer = members.find(m => m.id === exp.payerId);
+                            const payer = members.find(m => String(m._id || m.id) === String(exp.payerId));
                             return (
-                                <View key={exp.id || i} style={styles.expenseCard}>
+                                <View key={exp._id || exp.id || i} style={styles.expenseCard}>
                                     <View style={styles.expenseIcon}>
                                         <Text style={{ fontSize: 20 }}>
                                             {exp.isEcoFriendly ? '🌱' : '🧾'}
@@ -204,7 +211,7 @@ export default function TripDetailScreen({ route, navigation }) {
                                     <View style={styles.expenseInfo}>
                                         <Text style={styles.expenseDesc}>{exp.description}</Text>
                                         <Text style={styles.expensePayer}>
-                                            Paid by {payer?.id === user.id ? 'You' : payer?.name || 'Unknown'}
+                                            Paid by {String(payer?._id || payer?.id) === String(userId) ? 'You' : payer?.name || 'Unknown'}
                                         </Text>
                                     </View>
                                     <View style={styles.expenseAmountBox}>
@@ -232,14 +239,14 @@ export default function TripDetailScreen({ route, navigation }) {
                                 </Text>
                                 {members.map((m, i) => {
                                     const paid = expenses
-                                        .filter(e => e.payerId === m.id)
+                                        .filter(e => String(e.payerId) === String(m._id || m.id))
                                         .reduce((s, e) => s + e.amount, 0);
                                     const share = totalExpenses / members.length;
                                     const diff = paid - share;
                                     return (
                                         <View key={i} style={styles.settlementRow}>
                                             <Text style={styles.settlementName}>
-                                                {m.id === user.id ? 'You' : m.name}
+                                                {String(m._id || m.id) === String(userId) ? 'You' : m.name}
                                             </Text>
                                             <Text style={[styles.settlementAmount, {
                                                 color: diff >= 0 ? COLORS.primary : COLORS.error

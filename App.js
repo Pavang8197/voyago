@@ -5,6 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
 
 // Context & Theme
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -24,6 +26,33 @@ import RewardsScreen from './src/screens/RewardsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const tokenCache = {
+  async getToken(key) {
+    try {
+      const item = await SecureStore.getItemAsync(key);
+      if (item) {
+        console.log(`${key} was used 🔐 \n`);
+      } else {
+        console.log('No values stored under key: ' + key);
+      }
+      return item;
+    } catch (error) {
+      console.error('SecureStore get item error: ', error);
+      await SecureStore.deleteItemAsync(key);
+      return null;
+    }
+  },
+  async saveToken(key, value) {
+    try {
+      return SecureStore.setItemAsync(key, value);
+    } catch (err) {
+      return;
+    }
+  },
+};
+
+const publishableKey = "pk_test_c3F1YXJlLXNjb3JwaW9uLTMzLmNsZXJrLmFjY291bnRzLmRldiQ"; // Replace with your key
 
 // Bottom Tab Navigator for Authenticated Users
 function AuthenticatedTabs() {
@@ -97,36 +126,6 @@ function RootNavigator() {
     </Stack.Navigator>
   );
 }
-
-import * as SecureStore from 'expo-secure-store';
-import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
-
-const tokenCache = {
-  async getToken(key) {
-    try {
-      const item = await SecureStore.getItemAsync(key);
-      if (item) {
-        console.log(`${key} was used 🔐 \n`);
-      } else {
-        console.log('No values stored under key: ' + key);
-      }
-      return item;
-    } catch (error) {
-      console.error('SecureStore get item error: ', error);
-      await SecureStore.deleteItemAsync(key);
-      return null;
-    }
-  },
-  async saveToken(key, value) {
-    try {
-      return SecureStore.setItemAsync(key, value);
-    } catch (err) {
-      return;
-    }
-  },
-};
-
-const publishableKey = "pk_test_c3F1YXJlLXNjb3JwaW9uLTMzLmNsZXJrLmFjY291bnRzLmRldiQ"; // Replace with your key
 
 export default function App() {
   return (

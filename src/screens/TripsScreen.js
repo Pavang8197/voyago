@@ -28,8 +28,13 @@ export default function TripsScreen({ navigation }) {
     }, []);
 
     const fetchTrips = async () => {
+        const userId = user?._id || user?.id;
+        if (!userId) {
+            setLoading(false);
+            return;
+        }
         try {
-            const res = await fetch(`${API_URL}/trips?userId=${user.id}`);
+            const res = await fetch(`${API_URL}/trips?userId=${userId}`);
             if (res.ok) {
                 const data = await res.json();
                 setTrips(data);
@@ -55,7 +60,7 @@ export default function TripsScreen({ navigation }) {
                 body: JSON.stringify({
                     name: newTripName,
                     destination: newTripDest,
-                    creatorId: user.id,
+                    creatorId: user._id || user.id,
                 }),
             });
             if (res.ok) {
@@ -80,7 +85,7 @@ export default function TripsScreen({ navigation }) {
             const res = await fetch(`${API_URL}/trips/join`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ shareCode: joinCode, userId: user.id }),
+                body: JSON.stringify({ shareCode: joinCode, userId: user._id || user.id }),
             });
             if (res.ok) {
                 setShowJoinModal(false);
@@ -180,9 +185,9 @@ export default function TripsScreen({ navigation }) {
                     <Animated.View style={{ opacity: fadeAnim }}>
                         {trips.map((trip, i) => (
                             <TouchableOpacity
-                                key={trip.id}
+                                key={trip._id || trip.id || i}
                                 style={styles.tripCard}
-                                onPress={() => navigation.navigate('TripDetail', { tripId: trip.id })}
+                                onPress={() => navigation.navigate('TripDetail', { tripId: trip._id || trip.id })}
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient

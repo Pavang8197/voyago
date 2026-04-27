@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     passPoints: {
         fontSize: SIZES.fontSm,
         fontWeight: '700',
-        color: COLORS.primaryCurrent || COLORS.primary,
+        color: COLORS.primary,
         marginBottom: 8,
     },
     passDesc: {

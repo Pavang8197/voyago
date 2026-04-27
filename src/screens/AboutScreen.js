@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../constants/theme';
+import { useAuth } from '../context/AuthContext';
 
 export default function AboutScreen({ navigation }) {
+    const { user } = useAuth();
+
     return (
         <View style={styles.container}>
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -22,7 +25,7 @@ export default function AboutScreen({ navigation }) {
                     <Text style={styles.sectionTitle}>Our Mission 🎯</Text>
                     <View style={styles.missionCard}>
                         <Text style={styles.missionText}>
-                            At EcoShare, we believe that travel is one of the most enriching experiences a human can have. However, we also recognize the environmental impact that global travel has on our planet.
+                            At Voyago, we believe that travel is one of the most enriching experiences a human can have. However, we also recognize the environmental impact that global travel has on our planet.
                         </Text>
                         <Text style={[styles.missionText, { marginTop: 12 }]}>
                             Our mission is to provide travelers with the tools they need to plan, track, and offset their travel-related emissions, all while making group travel and expense sharing seamless and fair.
@@ -63,18 +66,20 @@ export default function AboutScreen({ navigation }) {
                             <Text style={styles.ctaDesc}>
                                 Start planning your next eco-friendly adventure today and be part of a community that cares.
                             </Text>
-                            <TouchableOpacity
-                                style={styles.ctaButton}
-                                onPress={() => navigation.navigate('Login')}
-                                activeOpacity={0.8}
-                            >
-                                <LinearGradient
-                                    colors={['#10B981', '#059669']}
-                                    style={styles.ctaButtonGradient}
+                            {!user && (
+                                <TouchableOpacity
+                                    style={styles.ctaButton}
+                                    onPress={() => navigation.navigate('Login')}
+                                    activeOpacity={0.8}
                                 >
-                                    <Text style={styles.ctaButtonText}>Get Started</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#10B981', '#059669']}
+                                        style={styles.ctaButtonGradient}
+                                    >
+                                        <Text style={styles.ctaButtonText}>Get Started</Text>
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            )}
                         </LinearGradient>
                     </View>
                 </View>

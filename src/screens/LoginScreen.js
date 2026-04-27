@@ -110,10 +110,10 @@ export default function LoginScreen({ navigation }) {
                         disabled={googleLoading}
                     >
                         {googleLoading ? (
-                            <ActivityIndicator color={COLORS.text} />
+                            <ActivityIndicator color="#333" />
                         ) : (
                             <>
-                                <FontAwesome name="google" size={20} color={COLORS.text} style={{ marginRight: 12 }} />
+                                <FontAwesome name="google" size={20} color="#DB4437" style={{ marginRight: 12 }} />
                                 <Text style={styles.googleBtnText}>Continue with Google</Text>
                             </>
                         )}

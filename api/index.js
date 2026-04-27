@@ -2,21 +2,43 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const shortid = require('shortid');
-require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI;
-if (MONGODB_URI) {
-    mongoose.connect(MONGODB_URI)
-        .then(() => console.log('Connected to MongoDB'))
-        .catch(err => console.error('MongoDB connection error:', err));
-}
+// Request logging
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
+
+// MongoDB Connection (cached for serverless)
+let isConnected = false;
+
+const connectDB = async () => {
+    if (isConnected) return;
+
+    const MONGODB_URI = process.env.MONGODB_URI;
+    if (!MONGODB_URI) {
+        console.error('MONGODB_URI environment variable is not set!');
+        return;
+    }
+
+    try {
+        await mongoose.connect(MONGODB_URI);
+        isConnected = true;
+        console.log('Connected to MongoDB');
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+    }
+};
+
+// Connect on startup
+connectDB();
 
 // --- Schemas ---
+
 const userSchema = new mongoose.Schema({
     clerkId: String,
     name: String,
@@ -24,7 +46,7 @@ const userSchema = new mongoose.Schema({
     photoUrl: String,
     ecoPoints: { type: Number, default: 0 },
     donatedPoints: { type: Number, default: 0 },
-});
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 const tripSchema = new mongoose.Schema({
     name: String,
@@ -33,7 +55,7 @@ const tripSchema = new mongoose.Schema({
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     shareCode: { type: String, default: () => shortid.generate() },
     date: { type: Date, default: Date.now },
-});
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 const expenseSchema = new mongoose.Schema({
     tripId: mongoose.Schema.Types.ObjectId,
@@ -43,7 +65,7 @@ const expenseSchema = new mongoose.Schema({
     splitWith: [mongoose.Schema.Types.ObjectId],
     isEcoFriendly: { type: Boolean, default: false },
     date: { type: Date, default: Date.now },
-});
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 const Trip = mongoose.models.Trip || mongoose.model('Trip', tripSchema);
@@ -51,38 +73,57 @@ const Expense = mongoose.models.Expense || mongoose.model('Expense', expenseSche
 
 // --- Routes ---
 
+app.get('/', (req, res) => res.send('Voyago Backend Active'));
+
 app.get('/api', (req, res) => {
     res.json({ message: 'Voyago API is running!' });
 });
 
+// Sync User with Backend
 app.post('/api/auth/google', async (req, res) => {
+    await connectDB();
+    console.log('Received auth sync request:', req.body);
     try {
-        const { name, email, photoUrl } = req.body;
-        let user = await User.findOne({ email });
+        const { clerkId, name, email, photoUrl } = req.body;
+        let user = await User.findOne({ clerkId });
+        
+        if (!user && email) {
+            user = await User.findOne({ email });
+        }
+
         if (!user) {
-            user = new User({ name, email, photoUrl });
+            user = new User({ clerkId, name, email, photoUrl });
             await user.save();
+            console.log('Created new user:', user.email);
         } else {
+            user.clerkId = clerkId;
             user.name = name;
             user.photoUrl = photoUrl;
             await user.save();
+            console.log('Updated existing user:', user.email);
         }
         res.json(user);
     } catch (error) {
+        console.error('Auth sync error:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
 
+// Get Single User
 app.get('/api/users/:id', async (req, res) => {
+    await connectDB();
     try {
         const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// Get Leaderboard
 app.get('/api/users', async (req, res) => {
+    await connectDB();
     try {
         const users = await User.find().sort({ ecoPoints: -1 }).limit(20);
         res.json(users);
@@ -91,7 +132,9 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
+// Get User Trips
 app.get('/api/trips', async (req, res) => {
+    await connectDB();
     try {
         const { userId } = req.query;
         const trips = await Trip.find({ members: userId }).sort({ date: -1 });
@@ -101,7 +144,9 @@ app.get('/api/trips', async (req, res) => {
     }
 });
 
+// Create Trip
 app.post('/api/trips', async (req, res) => {
+    await connectDB();
     try {
         const { name, destination, creatorId } = req.body;
         const trip = new Trip({
@@ -117,7 +162,9 @@ app.post('/api/trips', async (req, res) => {
     }
 });
 
+// Join Trip
 app.post('/api/trips/join', async (req, res) => {
+    await connectDB();
     try {
         const { shareCode, userId } = req.body;
         const trip = await Trip.findOne({ shareCode });
@@ -133,16 +180,21 @@ app.post('/api/trips/join', async (req, res) => {
     }
 });
 
+// Get Trip Details (Single Trip)
 app.get('/api/trips/:id', async (req, res) => {
+    await connectDB();
     try {
         const trip = await Trip.findById(req.params.id);
+        if (!trip) return res.status(404).json({ error: 'Trip not found' });
         res.json(trip);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// Get Expenses
 app.get('/api/expenses', async (req, res) => {
+    await connectDB();
     try {
         const { tripId, payerId } = req.query;
         let filter = {};
@@ -156,11 +208,14 @@ app.get('/api/expenses', async (req, res) => {
     }
 });
 
+// Add Expense
 app.post('/api/expenses', async (req, res) => {
+    await connectDB();
     try {
         const expense = new Expense(req.body);
         await expense.save();
         
+        // Award Eco Points if applicable
         if (expense.isEcoFriendly) {
             await User.findByIdAndUpdate(expense.payerId, {
                 $inc: { ecoPoints: 10 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, Animated, Image
+    View, Text, StyleSheet, ScrollView, Animated, Image, ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useAuth, API_URL } from '../context/AuthContext';
 
 export default function LeaderboardScreen() {
     const { user } = useAuth();
+    const userId = user?._id || user?.id;
     const [leaders, setLeaders] = useState([]);
     const [loading, setLoading] = useState(true);
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -61,6 +62,13 @@ export default function LeaderboardScreen() {
                     <Text style={styles.headerSubtitle}>See who is leading the sustainable movement</Text>
                 </LinearGradient>
 
+                {loading ? (
+                    <View style={{ paddingTop: 60, alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                ) : (
+                <>
+
                 {/* Top 3 Podium */}
                 {leaders.length >= 3 && (
                     <View style={styles.podium}>
@@ -87,7 +95,7 @@ export default function LeaderboardScreen() {
                                         </View>
                                     </View>
                                     <Text style={styles.podiumName} numberOfLines={1}>
-                                        {leader.id === user?.id ? 'You' : leader.name}
+                                        {String(leader._id || leader.id) === String(userId) ? 'You' : leader.name}
                                     </Text>
                                     <View style={styles.podiumPoints}>
                                         <Ionicons name="leaf" size={12} color={COLORS.primary} />
@@ -104,10 +112,10 @@ export default function LeaderboardScreen() {
                     <Text style={styles.sectionTitle}>All Rankings</Text>
                     {leaders.map((leader, i) => (
                         <View
-                            key={leader.id || i}
+                            key={leader._id || leader.id || i}
                             style={[
                                 styles.rankCard,
-                                leader.id === user?.id && styles.rankCardHighlight
+                                String(leader._id || leader.id) === String(userId) && styles.rankCardHighlight
                             ]}
                         >
                             <Text style={[styles.rankNumber, i < 3 && { color: getGradient(i)[0] }]}>
@@ -129,7 +137,7 @@ export default function LeaderboardScreen() {
 
                             <View style={styles.rankInfo}>
                                 <Text style={styles.rankName}>
-                                    {leader.id === user?.id ? `${leader.name} (You)` : leader.name}
+                                    {String(leader._id || leader.id) === String(userId) ? `${leader.name} (You)` : leader.name}
                                 </Text>
                                 <Text style={styles.rankEmail}>{leader.email}</Text>
                             </View>
@@ -141,6 +149,8 @@ export default function LeaderboardScreen() {
                         </View>
                     ))}
                 </Animated.View>
+                </>
+                )}
 
                 <View style={{ height: 100 }} />
             </ScrollView>
